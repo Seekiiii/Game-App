@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Jungle Ghar Sazi</title>
+<style>
+  :root{
+    --sky-top:#8FE3D0;
+    --sky-bottom:#C7F0DF;
+    --wood:#B08252;
+    --wood-dark:#8A6239;
+    --sun:#FFE29A;
+    --coral:#FF8C7A;
+    --navy:#2E4A3D;
+    --panel:#FFFDF7;
+    --struct-bg:#E7D9C4;
+    --decor-bg:#DFF3D8;
+    --furn-bg:#E3E6FB;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none;}
+  html,body{
+    margin:0; padding:0; height:100%; width:100%;
+    overflow:hidden;
+    font-family:-apple-system,'Segoe UI',Roboto,sans-serif;
+    background:linear-gradient(180deg,var(--sky-top),var(--sky-bottom));
+  }
+  #app{
+    position:fixed; inset:0;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:6px 10px;
+    background:rgba(255,253,247,0.85);
+    backdrop-filter:blur(4px);
+    box-shadow:0 2px 6px rgba(46,74,61,0.12);
+    z-index:2;
+    flex-shrink:0;
+  }
+  header h1{
+    font-size:15px;
+    margin:0;
+    color:var(--navy);
+    font-weight:800;
+    white-space:nowrap;
+  }
+  .header-btns{ display:flex; gap:6px; }
+  .icon-btn{
+    border:none;
+    border-radius:10px;
+    padding:7px 10px;
+    font-size:12px;
+    font-weight:700;
+    background:var(--panel);
+    color:var(--navy);
+    box-shadow:0 2px 0 rgba(46,74,61,0.18);
+    cursor:pointer;
+    display:flex; align-items:center; gap:4px;
+    white-space:nowrap;
+  }
+  .icon-btn:active{ transform:translateY(1px); box-shadow:0 1px 0 rgba(46,74,61,0.18); }
+  .icon-btn.danger{ background:var(--coral); color:#fff; }
+  .icon-btn.save{ background:var(--sun); color:var(--navy); }
+
+  /* ---------- Main layout: sidebar + grid ---------- */
+  #main{
+    flex:1;
+    display:flex;
+    overflow:hidden;
+    position:relative;
+  }
+
+  #sidebar{
+    width:92px;
+    flex-shrink:0;
+    background:rgba(255,253,247,0.9);
+    display:flex;
+    flex-direction:column;
+    box-shadow:2px 0 6px rgba(46,74,61,0.10);
+    z-index:2;
+  }
+  .tabs{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    padding:6px;
+    flex-shrink:0;
+  }
+  .tab-btn{
+    border:none;
+    border-radius:9px;
+    padding:6px 2px;
+    font-size:10px;
+    font-weight:700;
+    color:var(--navy);
+    background:transparent;
+    cursor:pointer;
+  }
+  .tab-btn.active{
+    background:var(--struct-bg);
+  }
+  .tab-btn[data-cat="decoration"].active{ background:var(--decor-bg); }
+  .tab-btn[data-cat="furniture"].active{ background:var(--furn-bg); }
+
+  #palette{
+    flex:1;
+    overflow-y:auto;
+    padding:4px 6px 10px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .block-item{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:2px;
+    padding:6px 2px;
+    border-radius:12px;
+    border:2px solid transparent;
+    background:#fff;
+    cursor:pointer;
+    box-shadow:0 2px 0 rgba(46,74,61,0.10);
+  }
+  .block-item .emoji{ font-size:20px; }
+  .block-item .label{ font-size:8.5px; font-weight:700; color:var(--navy); text-align:center; line-height:1.1; }
+  .block-item.selected{
+    border-color:var(--coral);
+    background:#FFF1EE;
+    transform:scale(1.05);
+  }
+  .block-item.eraser.selected{
+    border-color:var(--navy);
+    background:#EDEBFF;
+  }
+
+  /* ---------- Grid area ---------- */
+  #gridWrap{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    padding:10px;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 6% 90%, rgba(46,74,61,0.10) 0, transparent 30%),
+      radial-gradient(circle at 95% 10%, rgba(255,226,154,0.35) 0, transparent 35%);
+  }
+  .deco-emoji{
+    position:absolute;
+    font-size:26px;
+    opacity:0.55;
+    pointer-events:none;
+  }
+
+  #grid{
+    display:grid;
+    background:rgba(255,253,247,0.55);
+    border-radius:16px;
+    padding:6px;
+    box-shadow:inset 0 0 0 3px rgba(255,255,255,0.6), 0 6px 0 rgba(46,74,61,0.12);
+  }
+  .cell{
+    background:rgba(255,255,255,0.5);
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    position:relative;
+    margin:2px;
+  }
+  .cell .content{
+    width:100%;
+    height:100%;
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:calc(1vw + 10px);
+    transform:scale(0);
+    transition:transform .18s cubic-bezier(.34,1.56,.64,1);
+  }
+  .cell.filled .content{ transform:scale(1); }
+  .cell.bump .content{ animation:bump .18s ease; }
+  @keyframes bump{
+    0%{ transform:scale(0.7); }
+    60%{ transform:scale(1.15); }
+    100%{ transform:scale(1); }
+  }
+
+  /* ---------- Rotate overlay for portrait phones ---------- */
+  #rotateOverlay{
+    display:none;
+    position:fixed; inset:0;
+    background:var(--navy);
+    color:#fff;
+    z-index:50;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:24px;
+  }
+  #rotateOverlay .icon{
+    font-size:54px;
+    margin-bottom:14px;
+    animation:rotateHint 1.6s ease-in-out infinite;
+  }
+  @keyframes rotateHint{
+    0%,100%{ transform:rotate(0deg); }
+    50%{ transform:rotate(-90deg); }
+  }
+  #rotateOverlay h2{ font-size:19px; margin:0 0 6px; }
+  #rotateOverlay p{ font-size:13px; opacity:0.85; margin:0; max-width:260px; }
+
+  @media (orientation:portrait) and (max-width:900px){
+    #rotateOverlay{ display:flex; }
+  }
+
+  /* ---------- Toast ---------- */
+  #toast{
+    position:fixed;
+    bottom:16px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--navy);
+    color:#fff;
+    padding:9px 18px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:700;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    z-index:40;
+    white-space:nowrap;
+  }
+  #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <h1>🌴 Jungle Ghar Sazi</h1>
+    <div class="header-btns">
+      <button class="icon-btn danger" id="clearBtn">🗑️ Saaf</button>
+      <button class="icon-btn save" id="saveBtn">📸 Save</button>
+    </div>
+  </header>
+
+  <div id="main">
+    <div id="sidebar">
+      <div class="tabs">
+        <button class="tab-btn active" data-cat="structure">🧱 Ghar</button>
+        <button class="tab-btn" data-cat="decoration">🌸 Sajawat</button>
+        <button class="tab-btn" data-cat="furniture">🛋️ Saman</button>
+      </div>
+      <div id="palette"></div>
+    </div>
+
+    <div id="gridWrap">
+      <span class="deco-emoji" style="top:4%; left:3%;">🌳</span>
+      <span class="deco-emoji" style="bottom:6%; right:4%;">🌿</span>
+      <span class="deco-emoji" style="top:6%; right:6%;">☁️</span>
+      <span class="deco-emoji" style="bottom:4%; left:5%;">🍄</span>
+      <div id="grid"></div>
+    </div>
+  </div>
+</div>
+
+<div id="rotateOverlay">
+  <div class="icon">📱</div>
+  <h2>Phone ghumayen!</h2>
+  <p>Ye game landscape mode mein sab se acha chalta hai. Apna phone side se ghumayen.</p>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+  const COLS = 12;
+  const ROWS = 7;
+
+  const BLOCKS = {
+    structure: [
+      { id:'wall',   emoji:'🧱', label:'Deewar' },
+      { id:'roof',   emoji:'🔺', label:'Chatt' },
+      { id:'floor',  emoji:'🟫', label:'Farsh' },
+      { id:'door',   emoji:'🚪', label:'Darwaza' },
+      { id:'window', emoji:'🪟', label:'Khirki' },
+      { id:'grass',  emoji:'🟩', label:'Ghaas' }
+    ],
+    decoration: [
+      { id:'flower',    emoji:'🌸', label:'Phool' },
+      { id:'tree',      emoji:'🌳', label:'Darakht' },
+      { id:'bush',      emoji:'🌿', label:'Jhari' },
+      { id:'lantern',   emoji:'🏮', label:'Qandeel' },
+      { id:'flag',      emoji:'🚩', label:'Jhanda' },
+      { id:'butterfly', emoji:'🦋', label:'Titli' },
+      { id:'sun',       emoji:'☀️', label:'Suraj' },
+      { id:'rainbow',   emoji:'🌈', label:'Qaus Quzah' }
+    ],
+    furniture: [
+      { id:'bed',    emoji:'🛏️', label:'Bistar' },
+      { id:'chair',  emoji:'🪑', label:'Kursi' },
+      { id:'sofa',   emoji:'🛋️', label:'Sofa' },
+      { id:'lamp',   emoji:'💡', label:'Lamp' },
+      { id:'books',  emoji:'📚', label:'Kitabein' },
+      { id:'tv',     emoji:'📺', label:'TV' }
+    ]
+  };
+
+  const CAT_BG = { structure:'#E7D9C4', decoration:'#DFF3D8', furniture:'#E3E6FB' };
+
+  let currentCategory = 'structure';
+  let selectedTool = null; // { id, emoji } or 'eraser'
+  const cellData = {}; // id -> {emoji, cat}
+
+  const paletteEl = document.getElementById('palette');
+  const gridEl = document.getElementById('grid');
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const toastEl = document.getElementById('toast');
+
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toastEl.classList.remove('show'), 1600);
+  }
+
+  function renderPalette(){
+    paletteEl.innerHTML = '';
+
+    // Eraser always available at top
+    const eraser = document.createElement('div');
+    eraser.className = 'block-item eraser' + (selectedTool === 'eraser' ? ' selected' : '');
+    eraser.innerHTML = `<div class="emoji">🧽</div><div class="label">Mitao</div>`;
+    eraser.addEventListener('click', () => {
+      selectedTool = 'eraser';
+      renderPalette();
+    });
+    paletteEl.appendChild(eraser);
+
+    BLOCKS[currentCategory].forEach(block => {
+      const el = document.createElement('div');
+      const isSelected = selectedTool && selectedTool !== 'eraser' && selectedTool.id === block.id;
+      el.className = 'block-item' + (isSelected ? ' selected' : '');
+      el.innerHTML = `<div class="emoji">${block.emoji}</div><div class="label">${block.label}</div>`;
+      el.addEventListener('click', () => {
+        selectedTool = { id: block.id, emoji: block.emoji, cat: currentCategory };
+        renderPalette();
+      });
+      paletteEl.appendChild(el);
+    });
+  }
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentCategory = btn.dataset.cat;
+      tabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderPalette();
+    });
+  });
+
+  function sizeGrid(){
+    const wrap = document.getElementById('gridWrap');
+    const availW = wrap.clientWidth - 20;
+    const availH = wrap.clientHeight - 20;
+    const cellSize = Math.floor(Math.min(availW / COLS, availH / ROWS));
+    gridEl.style.gridTemplateColumns = `repeat(${COLS}, ${cellSize}px)`;
+    gridEl.style.gridTemplateRows = `repeat(${ROWS}, ${cellSize}px)`;
+  }
+
+  function buildGrid(){
+    gridEl.innerHTML = '';
+    for(let r = 0; r < ROWS; r++){
+      for(let c = 0; c < COLS; c++){
+        const id = r + '-' + c;
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.id = id;
+        const content = document.createElement('div');
+        content.className = 'content';
+        cell.appendChild(content);
+        cell.addEventListener('click', () => onCellClick(id, cell, content));
+        gridEl.appendChild(cell);
+      }
+    }
+    sizeGrid();
+  }
+
+  function onCellClick(id, cellEl, contentEl){
+    if(!selectedTool){
+      showToast('Pehle koi block chunain 👆');
+      return;
+    }
+    if(selectedTool === 'eraser'){
+      if(cellData[id]){
+        delete cellData[id];
+        cellEl.classList.remove('filled');
+        contentEl.textContent = '';
+        contentEl.style.background = 'transparent';
+      }
+      return;
+    }
+    cellData[id] = { emoji: selectedTool.emoji, cat: selectedTool.cat };
+    contentEl.textContent = selectedTool.emoji;
+    contentEl.style.background = CAT_BG[selectedTool.cat];
+    cellEl.classList.add('filled');
+    cellEl.classList.remove('bump');
+    void cellEl.offsetWidth;
+    cellEl.classList.add('bump');
+  }
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    if(!confirm('Kya aap poora ghar saaf karna chahte hain?')) return;
+    Object.keys(cellData).forEach(k => delete cellData[k]);
+    document.querySelectorAll('.cell').forEach(cellEl => {
+      cellEl.classList.remove('filled');
+      const content = cellEl.querySelector('.content');
+      content.textContent = '';
+      content.style.background = 'transparent';
+    });
+    showToast('Sab saaf ho gaya!');
+  });
+
+  document.getElementById('saveBtn').addEventListener('click', () => {
+    if(window.html2canvas){
+      captureAndDownload();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      script.onload = captureAndDownload;
+      script.onerror = () => showToast('Save feature ke liye internet chahiye');
+      document.body.appendChild(script);
+    }
+  });
+
+  function captureAndDownload(){
+    const target = document.getElementById('gridWrap');
+    html2canvas(target, { backgroundColor: '#C7F0DF', scale: 2 }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = 'mera-jungle-ghar.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast('Tasveer save ho gayi! 🎉');
+    }).catch(() => showToast('Kuch masla ho gaya, dobara koshish karein'));
+  }
+
+  window.addEventListener('resize', sizeGrid);
+  window.addEventListener('orientationchange', () => setTimeout(sizeGrid, 200));
+
+  renderPalette();
+  buildGrid();
+})();
+</script>
+</body>
+</html>
